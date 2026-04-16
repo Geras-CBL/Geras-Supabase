@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/Geras-CBL/Geras-Supabase/issues"
   },
-  "homepage": "https://github.com/Geras-CBL/Geras-Supabase#readme"
+  "homepage": "https://github.com/Geras-CBL/Geras-Supabase#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.3"
+  }
 }
