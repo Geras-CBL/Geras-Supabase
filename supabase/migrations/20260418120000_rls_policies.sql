@@ -416,36 +416,133 @@ using (
 
 -- ==============================================================
 -- 13) POLICIES: public.groceries
--- (catálogo partilhado — qualquer autenticado pode ler/inserir)
 -- ==============================================================
 
+-- Remover políticas abertas antigas caso existam
 drop policy if exists "groceries_authenticated_insert" on public.groceries;
-create policy "groceries_authenticated_insert"
-on public.groceries for insert to authenticated
-with check (true);
-
 drop policy if exists "groceries_authenticated_select" on public.groceries;
-create policy "groceries_authenticated_select"
+
+-- SELECT: Senior vê os seus, Caretaker vê dos seniores, Volunteer vê dos seus requests
+drop policy if exists "groceries_select_policy" on public.groceries;
+create policy "groceries_select_policy"
 on public.groceries for select to authenticated
-using (true);
+using (
+  id_senior = private.get_my_user_id()
+  or exists (
+    select 1 from public.senior_caretaker sc
+    where sc.id_caretaker = private.get_my_user_id()
+      and sc.id_senior = public.groceries.id_senior
+  )
+  or exists (
+    select 1 from public.request_item ri
+    join public.requests r on r.id = ri.id_request
+    where ri.id_groceries = public.groceries.id
+      and (r.id_volunteer = private.get_my_user_id() or r.state = 'PENDING')
+  )
+);
+
+-- INSERT: Apenas o próprio Senior ou o seu Caretaker
+drop policy if exists "groceries_insert_policy" on public.groceries;
+create policy "groceries_insert_policy"
+on public.groceries for insert to authenticated
+with check (
+  id_senior = private.get_my_user_id()
+  or exists (
+    select 1 from public.senior_caretaker sc
+    where sc.id_caretaker = private.get_my_user_id()
+      and sc.id_senior = public.groceries.id_senior
+  )
+);
+
+-- UPDATE/DELETE: Apenas o próprio Senior ou o seu Caretaker
+drop policy if exists "groceries_update_policy" on public.groceries;
+create policy "groceries_update_policy"
+on public.groceries for update to authenticated
+using (
+  id_senior = private.get_my_user_id()
+  or exists (
+    select 1 from public.senior_caretaker sc
+    where sc.id_caretaker = private.get_my_user_id()
+      and sc.id_senior = public.groceries.id_senior
+  )
+);
+
+drop policy if exists "groceries_delete_policy" on public.groceries;
+create policy "groceries_delete_policy"
+on public.groceries for delete to authenticated
+using (
+  id_senior = private.get_my_user_id()
+  or exists (
+    select 1 from public.senior_caretaker sc
+    where sc.id_caretaker = private.get_my_user_id()
+      and sc.id_senior = public.groceries.id_senior
+  )
+);
 
 -- ==============================================================
 -- 14) POLICIES: public.medicine
--- NOTA: a tabela medicine não tem coluna id_senior, por isso não
--- é possível restringir por dono sem alterar o schema.
--- Catálogo aberto a autenticados. Se adicionares id_senior,
--- actualiza estas policies para restringir por utilizador.
 -- ==============================================================
 
+-- Remover políticas abertas antigas caso existam
 drop policy if exists "medicine_authenticated_insert" on public.medicine;
-create policy "medicine_authenticated_insert"
-on public.medicine for insert to authenticated
-with check (true);
-
 drop policy if exists "medicine_authenticated_select" on public.medicine;
-create policy "medicine_authenticated_select"
+
+-- SELECT: Senior vê os seus, Caretaker vê dos seniores, Volunteer vê dos seus requests
+drop policy if exists "medicine_select_policy" on public.medicine;
+create policy "medicine_select_policy"
 on public.medicine for select to authenticated
-using (true);
+using (
+  id_senior = private.get_my_user_id()
+  or exists (
+    select 1 from public.senior_caretaker sc
+    where sc.id_caretaker = private.get_my_user_id()
+      and sc.id_senior = public.medicine.id_senior
+  )
+  or exists (
+    select 1 from public.request_item ri
+    join public.requests r on r.id = ri.id_request
+    where ri.id_medicine = public.medicine.id
+      and (r.id_volunteer = private.get_my_user_id() or r.state = 'PENDING')
+  )
+);
+
+-- INSERT: Apenas o próprio Senior ou o seu Caretaker
+drop policy if exists "medicine_insert_policy" on public.medicine;
+create policy "medicine_insert_policy"
+on public.medicine for insert to authenticated
+with check (
+  id_senior = private.get_my_user_id()
+  or exists (
+    select 1 from public.senior_caretaker sc
+    where sc.id_caretaker = private.get_my_user_id()
+      and sc.id_senior = public.medicine.id_senior
+  )
+);
+
+-- UPDATE/DELETE: Apenas o próprio Senior ou o seu Caretaker
+drop policy if exists "medicine_update_policy" on public.medicine;
+create policy "medicine_update_policy"
+on public.medicine for update to authenticated
+using (
+  id_senior = private.get_my_user_id()
+  or exists (
+    select 1 from public.senior_caretaker sc
+    where sc.id_caretaker = private.get_my_user_id()
+      and sc.id_senior = public.medicine.id_senior
+  )
+);
+
+drop policy if exists "medicine_delete_policy" on public.medicine;
+create policy "medicine_delete_policy"
+on public.medicine for delete to authenticated
+using (
+  id_senior = private.get_my_user_id()
+  or exists (
+    select 1 from public.senior_caretaker sc
+    where sc.id_caretaker = private.get_my_user_id()
+      and sc.id_senior = public.medicine.id_senior
+  )
+);
 
 -- ==============================================================
 -- 15) POLICIES: public.request_item
