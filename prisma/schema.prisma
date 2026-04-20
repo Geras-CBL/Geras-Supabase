@@ -1,13 +1,224 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model evaluations {
+  id                                    Int       @id @unique @default(autoincrement())
+  description                           String?   @db.VarChar
+  evaluation                            eval_rate
+  id_senior                             Int?
+  id_volunteer                          Int?
+  id_request                            Int?
+  requests                              requests? @relation(fields: [id_request], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_evaluations_id_seniorTousers    users?    @relation("evaluations_id_seniorTousers", fields: [id_senior], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_evaluations_id_volunteerTousers users?    @relation("evaluations_id_volunteerTousers", fields: [id_volunteer], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model groceries {
+  id               Int                @id @unique @default(autoincrement())
+  name             String             @db.VarChar
+  category         String?            @db.VarChar
+  unit             Int?
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  request_item     request_item[]
+  senior_groceries senior_groceries[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model medicine {
+  id             Int            @id @unique @default(autoincrement())
+  name           String         @db.VarChar
+  description    String?        @db.VarChar
+  dosage         Decimal?       @db.Decimal
+  frequency      Int?
+  start_date     DateTime?      @db.Date
+  end_date       DateTime?      @db.Date
+  scheduled_time DateTime?      @db.Timestamp(6)
+  status         med_status?
+  created_at     DateTime?      @default(now()) @db.Timestamp(6)
+  id_senior      Int?
+  users          users?         @relation(fields: [id_senior], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  request_item   request_item[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model monitoring {
+  id                  Int              @id @default(autoincrement())
+  id_senior           Int?
+  custom_metric_name  String?          @db.VarChar
+  custom_metric_value Decimal?         @db.Decimal
+  type                type_monitoring?
+  value               Decimal?         @db.Decimal
+  users               users?           @relation(fields: [id_senior], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model notifications {
+  id                                      Int     @id @default(autoincrement())
+  type                                    String? @db.VarChar
+  description                             String  @db.VarChar
+  id_senior                               Int?
+  id_caretaker                            Int?
+  id_volunteer                            Int?
+  users_notifications_id_caretakerTousers users?  @relation("notifications_id_caretakerTousers", fields: [id_caretaker], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_notifications_id_seniorTousers    users?  @relation("notifications_id_seniorTousers", fields: [id_senior], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_notifications_id_volunteerTousers users?  @relation("notifications_id_volunteerTousers", fields: [id_volunteer], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model request_item {
+  id           Int        @id @default(autoincrement())
+  id_request   Int?
+  id_groceries Int?
+  id_medicine  Int?
+  groceries    groceries? @relation(fields: [id_groceries], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  medicine     medicine?  @relation(fields: [id_medicine], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  requests     requests?  @relation(fields: [id_request], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model requests {
+  id                                 Int            @id @default(autoincrement())
+  category                           String?        @db.VarChar
+  distance                           Float?
+  created_at                         DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at                         DateTime?      @default(now()) @db.Timestamp(6)
+  location_address                   String?        @db.VarChar
+  description                        String?        @db.VarChar
+  state                              req_state?     @default(PENDING)
+  id_senior                          Int?
+  id_caretaker                       Int?
+  id_volunteer                       Int?
+  evaluations                        evaluations[]
+  request_item                       request_item[]
+  users_requests_id_caretakerTousers users?         @relation("requests_id_caretakerTousers", fields: [id_caretaker], references: [id], onUpdate: NoAction)
+  users_requests_id_seniorTousers    users?         @relation("requests_id_seniorTousers", fields: [id_senior], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_requests_id_volunteerTousers users?         @relation("requests_id_volunteerTousers", fields: [id_volunteer], references: [id], onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model senior_caretaker {
+  id_senior                                  Int
+  id_caretaker                               Int
+  users_senior_caretaker_id_caretakerTousers users @relation("senior_caretaker_id_caretakerTousers", fields: [id_caretaker], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_senior_caretaker_id_seniorTousers    users @relation("senior_caretaker_id_seniorTousers", fields: [id_senior], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_senior, id_caretaker])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model senior_groceries {
+  id           Int       @id @default(autoincrement())
+  id_senior    Int
+  id_groceries Int
+  quantity     Int?      @default(1)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  groceries    groceries @relation(fields: [id_groceries], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users     @relation(fields: [id_senior], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id                                                    Int                  @id @default(autoincrement())
+  email                                                 String               @unique @db.VarChar
+  password_hash                                         String
+  name                                                  String               @db.VarChar
+  role                                                  user_role
+  gender                                                user_gender?
+  address                                               String?              @db.VarChar
+  zip_code                                              String?              @db.VarChar
+  local                                                 String?              @db.VarChar
+  created_at                                            DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at                                            DateTime?            @default(now()) @db.Timestamp(6)
+  action_radius                                         Float?
+  rating                                                Float?
+  profile_picture                                       Json?                @db.Json
+  auth_user_id                                          String?              @unique(map: "users_auth_user_id_uniq") @db.Uuid
+  evaluations_evaluations_id_seniorTousers              evaluations[]        @relation("evaluations_id_seniorTousers")
+  evaluations_evaluations_id_volunteerTousers           evaluations[]        @relation("evaluations_id_volunteerTousers")
+  medicine                                              medicine[]
+  monitoring                                            monitoring[]
+  notifications_notifications_id_caretakerTousers       notifications[]      @relation("notifications_id_caretakerTousers")
+  notifications_notifications_id_seniorTousers          notifications[]      @relation("notifications_id_seniorTousers")
+  notifications_notifications_id_volunteerTousers       notifications[]      @relation("notifications_id_volunteerTousers")
+  requests_requests_id_caretakerTousers                 requests[]           @relation("requests_id_caretakerTousers")
+  requests_requests_id_seniorTousers                    requests[]           @relation("requests_id_seniorTousers")
+  requests_requests_id_volunteerTousers                 requests[]           @relation("requests_id_volunteerTousers")
+  senior_caretaker_senior_caretaker_id_caretakerTousers senior_caretaker[]   @relation("senior_caretaker_id_caretakerTousers")
+  senior_caretaker_senior_caretaker_id_seniorTousers    senior_caretaker[]   @relation("senior_caretaker_id_seniorTousers")
+  senior_groceries                                      senior_groceries[]
+  vouchers_volunteer                                    vouchers_volunteer[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model vouchers {
+  id                 Int                  @id @default(autoincrement())
+  store_name         String               @db.VarChar
+  address            String?              @db.VarChar
+  zip_code           String?              @db.VarChar
+  value              Decimal              @db.Decimal
+  needed_tasks       Int?
+  vouchers_volunteer vouchers_volunteer[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model vouchers_volunteer {
+  id_voucher   Int
+  id_volunteer Int
+  status       vouch_status? @default(AVAILABLE)
+  users        users         @relation(fields: [id_volunteer], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vouchers     vouchers      @relation(fields: [id_voucher], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_voucher, id_volunteer])
+}
+
+enum eval_rate {
+  SATISFIED
+  NEUTRAL
+  DISSATISFIED
+}
+
+enum med_status {
+  LATE
+  ALREADY_TAKEN @map("ALREADY TAKEN")
+  TO_TAKE       @map("TO TAKE")
+}
+
+enum req_state {
+  PENDING
+  ACCEPTED
+  COMPLETED
+  CANCELLED
+}
+
+enum type_monitoring {
+  BLOOD_PRESSURE @map("BLOOD PRESSURE")
+  HEART_RATE     @map("HEART RATE")
+  TEMPERATURE
+}
+
+enum user_gender {
+  FEMALE
+  MALE
+  NON_BINARY        @map("NON-BINARY")
+  PREFER_NOT_TO_SAY @map("PREFER NOT TO SAY")
+}
+
+enum user_role {
+  SENIOR
+  CARETAKER
+  VOLUNTEER
+}
+
+enum vouch_status {
+  AVAILABLE
+  UNAVAILABLE
+  EXPIRED
 }
