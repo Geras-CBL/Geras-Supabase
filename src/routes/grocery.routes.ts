@@ -4,8 +4,8 @@ import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// 1. Listar todas as mercearias (Protegido por login)
-router.get('/', authMiddleware, async (req: Request, res: Response) => {
+// 1. Listar todas as mercearias (Protegido por login - contudo no momento atual para efeitos de teste está desbloqueado)
+router.get('/', async (req: Request, res: Response) => {
   try {
     const allGroceries = await prisma.groceries.findMany({
       orderBy: { name: 'asc' }
