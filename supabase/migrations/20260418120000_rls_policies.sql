@@ -94,9 +94,16 @@ alter table public.vouchers          enable row level security;
 -- ==============================================================
 
 drop policy if exists "users_select_own" on public.users;
-create policy "users_select_own"
+create policy "users_select_associated"
 on public.users for select to authenticated
-using (id = private.get_my_user_id());
+using (
+  id = private.get_my_user_id()
+  or exists (
+    select 1 from public.senior_caretaker sc
+    where (sc.id_senior = private.get_my_user_id() and sc.id_caretaker = public.users.id)
+       or (sc.id_caretaker = private.get_my_user_id() and sc.id_senior = public.users.id)
+  )
+);
 
 drop policy if exists "users_update_own" on public.users;
 create policy "users_update_own"
