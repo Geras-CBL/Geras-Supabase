@@ -53,4 +53,9 @@ jobs:
         run: supabase db push
 
       - name: Deploy Edge Functions
-        run: supabase functions deploy
+        run: |
+          if [ -d "supabase/functions" ]; then
+            supabase functions deploy
+          else
+            echo "No functions found in supabase/functions. Skipping deploy."
+          fi
