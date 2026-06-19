@@ -44,14 +44,14 @@ insert into public.senior_caretaker (id_senior, id_caretaker)
 on conflict do nothing;
 
 -- Inserir pedidos usando os IDs reais
-insert into public.requests (state, id_senior, id_volunteer, id_caretaker)
-  select 'PENDING',   id_senior, null,         null from test_user_ids;
-insert into public.requests (state, id_senior, id_volunteer, id_caretaker)
-  select 'ACCEPTED',  id_senior, id_volunteer, null from test_user_ids;
-insert into public.requests (state, id_senior, id_volunteer, id_caretaker)
-  select 'COMPLETED', id_senior, id_volunteer, null from test_user_ids;
-insert into public.requests (state, id_senior, id_volunteer, id_caretaker)
-  select 'PENDING',   id_senior2, null,        null from test_user_ids;
+insert into public.requests (state, description, id_senior, id_volunteer, id_caretaker)
+  select 'PENDING',   'Pedido de teste PENDING senior',    id_senior,  null,         null from test_user_ids;
+insert into public.requests (state, description, id_senior, id_volunteer, id_caretaker)
+  select 'ACCEPTED',  'Pedido de teste ACCEPTED',          id_senior,  id_volunteer, null from test_user_ids;
+insert into public.requests (state, description, id_senior, id_volunteer, id_caretaker)
+  select 'COMPLETED', 'Pedido de teste COMPLETED',         id_senior,  id_volunteer, null from test_user_ids;
+insert into public.requests (state, description, id_senior, id_volunteer, id_caretaker)
+  select 'PENDING',   'Pedido de teste PENDING senior2',   id_senior2, null,         null from test_user_ids;
 
 -- Guardar IDs dos pedidos gerados
 create temp table test_request_ids as
