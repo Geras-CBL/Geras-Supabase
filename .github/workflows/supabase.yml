@@ -31,7 +31,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.107.0
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -63,7 +63,7 @@ jobs:
       - name: Type-check Edge Functions
         run: |
           if [ -d "supabase/functions" ]; then
-            find supabase/functions -name "index.ts" -print0 | xargs -0 -r deno check
+            find supabase/functions -name "index.ts" -print0 | xargs -0 -r deno check --config supabase/functions/deno.json --no-npm
           else
             echo "No functions found. Skipping Deno check."
           fi
@@ -94,7 +94,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.107.0
 
       - name: Check Secrets
         run: |
