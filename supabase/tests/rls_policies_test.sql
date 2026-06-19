@@ -61,6 +61,11 @@ create temp table test_request_ids as
     (select id from public.requests where id_senior = (select id_senior  from test_user_ids) and state = 'COMPLETED' limit 1) as id_req_completed,
     (select id from public.requests where id_senior = (select id_senior2 from test_user_ids) and state = 'PENDING'   limit 1) as id_req_senior2;
 
+-- Garantir que metric_definitions tem a entrada necessária para o teste
+insert into public.metric_definitions (metric_type, unit, has_secondary, primary_label)
+  values ('HEART RATE', 'bpm', false, 'Frequência Cardíaca')
+on conflict do nothing;
+
 -- Inserir monitoring para o senior
 insert into public.monitoring (id_senior, metric_type, value_primary, measured_at)
   select id_senior, 'HEART RATE', 72, now() from test_user_ids;
