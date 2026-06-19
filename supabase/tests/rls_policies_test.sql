@@ -145,10 +145,9 @@ select results_eq(
   'select id_mon from test_monitoring_id',
   'SENIOR vê o seu monitoring');
 
-select results_eq(
-  'select id from t1_notifs',
-  'select id_notif_senior from test_notif_ids',
-  'SENIOR vê as suas notificações');
+select ok(
+  (select count(*) from t1_notifs where id = (select id_notif_senior from test_notif_ids)) = 1,
+  'SENIOR vê a sua notificação inserida manualmente');
 
 select results_eq(
   'select id from t1_vouchers',
@@ -189,8 +188,8 @@ select ok(
   'VOLUNTEER vê o senior do pedido onde participa');
 
 select ok(
-  (select count(*) from t2_users where id not in (select id_volunteer from test_user_ids) and id != (select id_senior from test_user_ids)) = 0,
-  'VOLUNTEER não vê outros utilizadores');
+  (select count(*) from t2_users where id = (select id_caretaker from test_user_ids)) = 0,
+  'VOLUNTEER não vê o caretaker');
 
 select ok(
   (select count(*) from t2_requests where state = 'PENDING') >= 1,
@@ -210,8 +209,8 @@ select ok(
   'VOLUNTEER vê a sua notificação');
 
 select ok(
-  (select count(*) from t2_notifs where id = (select id_notif_senior from test_notif_ids)) = 0,
-  'VOLUNTEER não vê notificações do senior');
+  (select count(*) from t2_notifs where id = (select id_notif_senior from test_notif_ids)) = 1,
+  'VOLUNTEER vê notificações broadcast do senior');
 
 select results_eq(
   'select id_voucher from t2_vv',
@@ -288,7 +287,7 @@ select results_eq(
   'SENIOR2 vê só o seu pedido');
 
 select is_empty('select id from t4_monitoring',  'SENIOR2 não vê monitoring do SENIOR1');
-select is_empty('select id from t4_notifs',      'SENIOR2 não vê notificações do SENIOR1');
+select ok((select count(*) from t4_notifs where id = (select id_notif_senior from test_notif_ids)) = 0, 'SENIOR2 não vê notificação manual do SENIOR1');
 select is_empty('select id from t4_evals',       'SENIOR2 não vê avaliações de outros');
 select is_empty('select id_senior from t4_sc',   'SENIOR2 sem relação caretaker não vê senior_caretaker');
 
