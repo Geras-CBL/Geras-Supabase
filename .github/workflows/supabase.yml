@@ -63,7 +63,7 @@ jobs:
       - name: Type-check Edge Functions
         run: |
           if [ -d "supabase/functions" ]; then
-            find supabase/functions -name "index.ts" -print0 | xargs -0 -r deno check
+            find supabase/functions -name "index.ts" -print0 | xargs -0 -r deno check --no-npm
           else
             echo "No functions found. Skipping Deno check."
           fi
