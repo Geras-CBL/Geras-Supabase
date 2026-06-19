@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
+import { createClient } from "@supabase/supabase-js"
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
