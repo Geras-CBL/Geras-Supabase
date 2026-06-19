@@ -11,7 +11,7 @@
 -- ==============================================================
 begin;
 
-select plan(25);
+select plan(32);
 
 -- ==============================================================
 -- SETUP: dados de teste (corre como postgres/superuser)
@@ -44,14 +44,15 @@ insert into public.senior_caretaker (id_senior, id_caretaker)
 on conflict do nothing;
 
 -- Inserir pedidos usando os IDs reais
-insert into public.requests (state, description, id_senior, id_volunteer, id_caretaker)
-  select 'PENDING',   'Pedido de teste PENDING senior',    id_senior,  null,         null from test_user_ids;
-insert into public.requests (state, description, id_senior, id_volunteer, id_caretaker)
-  select 'ACCEPTED',  'Pedido de teste ACCEPTED',          id_senior,  id_volunteer, null from test_user_ids;
-insert into public.requests (state, description, id_senior, id_volunteer, id_caretaker)
-  select 'COMPLETED', 'Pedido de teste COMPLETED',         id_senior,  id_volunteer, null from test_user_ids;
-insert into public.requests (state, description, id_senior, id_volunteer, id_caretaker)
-  select 'PENDING',   'Pedido de teste PENDING senior2',   id_senior2, null,         null from test_user_ids;
+-- NOTA: is_public=true no PENDING para que VOLUNTEER o consiga ver (política requests_volunteer_select_pending_or_own)
+insert into public.requests (state, description, is_public, id_senior, id_volunteer, id_caretaker)
+  select 'PENDING',   'Pedido de teste PENDING senior',    true,  id_senior,  null,         null from test_user_ids;
+insert into public.requests (state, description, is_public, id_senior, id_volunteer, id_caretaker)
+  select 'ACCEPTED',  'Pedido de teste ACCEPTED',          false, id_senior,  id_volunteer, null from test_user_ids;
+insert into public.requests (state, description, is_public, id_senior, id_volunteer, id_caretaker)
+  select 'COMPLETED', 'Pedido de teste COMPLETED',         false, id_senior,  id_volunteer, null from test_user_ids;
+insert into public.requests (state, description, is_public, id_senior, id_volunteer, id_caretaker)
+  select 'PENDING',   'Pedido de teste PENDING senior2',   true,  id_senior2, null,         null from test_user_ids;
 
 -- Guardar IDs dos pedidos gerados
 create temp table test_request_ids as
@@ -81,8 +82,9 @@ insert into public.notifications (description, id_volunteer)
 
 create temp table test_notif_ids as
   select
-    (select id from public.notifications where id_senior   = (select id_senior   from test_user_ids) and id_volunteer is null limit 1) as id_notif_senior,
-    (select id from public.notifications where id_volunteer = (select id_volunteer from test_user_ids) and id_senior   is null limit 1) as id_notif_volunteer;
+    -- Identificar por description única para evitar colisões com notificações do trigger
+    (select id from public.notifications where description = 'Notif senior'    limit 1) as id_notif_senior,
+    (select id from public.notifications where description = 'Notif volunteer' limit 1) as id_notif_volunteer;
 
 -- Inserir voucher
 insert into public.vouchers (store_name, value) values ('Loja Teste', 10.00);
@@ -116,10 +118,18 @@ create temp table t1_evals      as select id from public.evaluations;
 
 reset role; -- ← SEMPRE antes de chamar pgTAP
 
-select results_eq(
-  'select id from t1_users',
-  'select id_senior from test_user_ids',
-  'SENIOR vê só o seu próprio perfil');
+-- SENIOR vê o seu próprio perfil E o seu caretaker (política users_caretaker_select_seniors)
+select ok(
+  (select count(*) from t1_users where id = (select id_senior from test_user_ids)) = 1,
+  'SENIOR vê o seu próprio perfil');
+
+select ok(
+  (select count(*) from t1_users where id = (select id_caretaker from test_user_ids)) = 1,
+  'SENIOR vê o seu caretaker');
+
+select ok(
+  (select count(*) from t1_users where id not in (select id_senior from test_user_ids) and id != (select id_caretaker from test_user_ids)) = 0,
+  'SENIOR não vê outros utilizadores');
 
 select results_eq(
   'select id from t1_requests order by id',
@@ -169,10 +179,18 @@ create temp table t2_evals      as select id from public.evaluations;
 
 reset role;
 
-select results_eq(
-  'select id from t2_users',
-  'select id_volunteer from test_user_ids',
-  'VOLUNTEER vê só o seu próprio perfil');
+-- VOLUNTEER vê o seu perfil E o senior do pedido ACCEPTED (política users_volunteer_select_senior)
+select ok(
+  (select count(*) from t2_users where id = (select id_volunteer from test_user_ids)) = 1,
+  'VOLUNTEER vê o seu próprio perfil');
+
+select ok(
+  (select count(*) from t2_users where id = (select id_senior from test_user_ids)) = 1,
+  'VOLUNTEER vê o senior do pedido onde participa');
+
+select ok(
+  (select count(*) from t2_users where id not in (select id_volunteer from test_user_ids) and id != (select id_senior from test_user_ids)) = 0,
+  'VOLUNTEER não vê outros utilizadores');
 
 select ok(
   (select count(*) from t2_requests where state = 'PENDING') >= 1,
@@ -186,10 +204,14 @@ select is_empty(
   'select id from t2_monitoring',
   'VOLUNTEER não vê monitoring de ninguém');
 
-select results_eq(
-  'select id from t2_notifs',
-  'select id_notif_volunteer from test_notif_ids',
-  'VOLUNTEER vê só as suas notificações');
+-- VOLUNTEER vê apenas a sua própria notificação (não vê notificações de seniors nem de outros)
+select ok(
+  (select count(*) from t2_notifs where id = (select id_notif_volunteer from test_notif_ids)) = 1,
+  'VOLUNTEER vê a sua notificação');
+
+select ok(
+  (select count(*) from t2_notifs where id = (select id_notif_senior from test_notif_ids)) = 0,
+  'VOLUNTEER não vê notificações do senior');
 
 select results_eq(
   'select id_voucher from t2_vv',
@@ -214,10 +236,18 @@ create temp table t3_sc         as select id_senior, id_caretaker from public.se
 
 reset role;
 
-select results_eq(
-  'select id from t3_users',
-  'select id_caretaker from test_user_ids',
-  'CARETAKER vê só o seu próprio perfil');
+-- CARETAKER vê o seu perfil E o senior associado (política users_caretaker_select_seniors)
+select ok(
+  (select count(*) from t3_users where id = (select id_caretaker from test_user_ids)) = 1,
+  'CARETAKER vê o seu próprio perfil');
+
+select ok(
+  (select count(*) from t3_users where id = (select id_senior from test_user_ids)) = 1,
+  'CARETAKER vê o seu senior');
+
+select ok(
+  (select count(*) from t3_users where id not in (select id_caretaker from test_user_ids) and id != (select id_senior from test_user_ids)) = 0,
+  'CARETAKER não vê outros utilizadores');
 
 select ok(
   (select count(*) from t3_requests where state = 'PENDING') >= 1,
