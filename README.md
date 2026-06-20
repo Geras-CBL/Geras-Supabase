@@ -1,6 +1,8 @@
 # Geras - Backend (Supabase)
 <img src="https://github.com/user-attachments/assets/ce068f7b-a61c-43aa-99f0-d52e1d053c39" height="100">
 
+## Sobre o Repositório
+
 Este repositório contém toda a infraestrutura backend da aplicação Geras, utilizando o [Supabase](https://supabase.com/). Inclui as migrações da base de dados PostgreSQL, políticas de RLS (Row Level Security), triggers, e Edge Functions (Deno).
 
 ---
