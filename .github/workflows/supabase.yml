@@ -132,7 +132,7 @@ jobs:
           mkdir -p frontend-repo/geras/types
           cp supabase_types.ts frontend-repo/geras/types/supabase.ts
           cd frontend-repo/geras
-          npx prettier@3 --write types/supabase.ts
+          npx prettier@3 --no-config --write --single-quote --trailing-comma all types/supabase.ts
 
       - name: Create Pull Request in Frontend
         uses: peter-evans/create-pull-request@v6
